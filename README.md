@@ -5,8 +5,8 @@ languages:
 products:
 - azure
 extensions:
-- services: Sql
-- platforms: dotnet
+  services: Sql
+  platforms: dotnet
 ---
 
 # Getting started on getting SQL server metrics in C# #
