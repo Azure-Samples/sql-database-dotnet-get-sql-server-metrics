@@ -60,7 +60,7 @@ namespace GettingSqlServerMetrics
                 Utilities.Log("creating SQL Server ...");
                 string sqlServerName = Utilities.CreateRandomName("sqlserver");
                 string sqlAdmin = "sqladmin1234";
-                string sqlAdminPwd = "azure12345QWE!";//Utilities.CreatePassword();
+                string sqlAdminPwd = Utilities.CreatePassword();
                 SqlServerData sqlData = new SqlServerData(AzureLocation.EastUS)
                 {
                     AdministratorLogin = sqlAdmin,
