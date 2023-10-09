@@ -206,8 +206,8 @@ namespace GettingSqlServerMetrics
                         foreach (var metricDefinition in metricDefinitions)
                         {
                             // find metric definition for "DTU used" and "Storage used"
-                            if (metricDefinition.Name.LocalizedValue.Equals("dtu used", StringComparison.OrdinalIgnoreCase)
-                                || metricDefinition.Name.LocalizedValue.Equals("storage used", StringComparison.OrdinalIgnoreCase))
+                            if (metricDefinition.Name.LocalizedValue.Equals("dtu_used", StringComparison.OrdinalIgnoreCase)
+                                || metricDefinition.Name.LocalizedValue.Equals("storage_used", StringComparison.OrdinalIgnoreCase))
                             {
                                 // get metric records
                                 var metricRecords = new MetricsQueryOptions()
