@@ -7,21 +7,15 @@ using Azure.Identity;
 using Azure.ResourceManager.Samples.Common;
 using Azure.ResourceManager.Resources;
 using Azure.ResourceManager;
+using Azure.ResourceManager.Models;
 using Azure.ResourceManager.Sql;
 using Azure.ResourceManager.Sql.Models;
 using Azure.ResourceManager.Monitor;
+using Azure.ResourceManager.Monitor.Models;
 using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
-using Azure.ResourceManager.Network;
-using Azure.ResourceManager.Monitor.Models;
-using Azure.Monitor.Query;
-using Microsoft.Extensions.Azure;
-using Azure.ResourceManager.Models;
 using System.Collections;
+using Azure.Monitor.Query;
 using Azure.Monitor.Query.Models;
 
 namespace GettingSqlServerMetrics
@@ -167,7 +161,7 @@ namespace GettingSqlServerMetrics
                         var subscriptionUsageMetrics = subscription.GetSubscriptionUsages(AzureLocation.EastUS);
                         foreach (var usageMetric in subscriptionUsageMetrics)
                         {
-                            Utilities.Log(usageMetric.Data.Name);
+                            Utilities.Log($"Listing the SQL subscription usage metrics with name : {usageMetric.Data.Name}");
                         }
 
                         // ============================================================
@@ -176,7 +170,7 @@ namespace GettingSqlServerMetrics
                         var databaseUsageMetrics = await sqlDB.GetDatabaseUsagesAsync().ToEnumerableAsync();
                         foreach (var usageMetric in databaseUsageMetrics)
                         {
-                            Utilities.Log(usageMetric.Name.ToString());
+                            Utilities.Log($"Listing the SQL database usage metrics with name: {usageMetric.Name}");
                         }
 
                         // ============================================================
@@ -189,7 +183,7 @@ namespace GettingSqlServerMetrics
 
                         foreach (var metric in dbMetrics)
                         {
-                            Utilities.Log(metric.Name.Value);
+                            Utilities.Log($"Listing the SQL database CPU metrics with name: {metric.Name.Value}");
                         }
 
                         // ============================================================
@@ -200,21 +194,22 @@ namespace GettingSqlServerMetrics
 
                         foreach (var metric in dbMetrics)
                         {
-                            Utilities.Log(metric.Name.Value);
+                            Utilities.Log($"Listing the SQL database metrics with name: {metric.Name.Value}");
                         }
 
                         // ============================================================
                         // Use Monitor Service to list the SQL server metrics.
                         Utilities.Log("Using Monitor Service to list the SQL server metrics");
+                        var metricClient = new MetricsQueryClient(new DefaultAzureCredential());
                         var elasticPool = (await sqlServer.GetElasticPoolAsync(ep.Data.Name)).Value;
-                        var metricDefinitions = await elasticPool.GetMetricDefinitionsAsync().ToEnumerableAsync();  //The format of the URI could not be determined.
-                        foreach (var metricDefinition in metricDefinitions.ToList())
+                        var metricDefinitions = await client.GetMonitorMetricDefinitionsAsync(elasticPool.Id).ToEnumerableAsync();
+                        //var metricDefinitions = await elasticPool.GetMetricDefinitionsAsync().ToEnumerableAsync(); //The format of the URI could not be determined.
+                        foreach (var metricDefinition in metricDefinitions)
                         {
                             // find metric definition for "DTU used" and "Storage used"
                             if (metricDefinition.Name.LocalizedValue.Equals("dtu used", StringComparison.OrdinalIgnoreCase)
                                 || metricDefinition.Name.LocalizedValue.Equals("storage used", StringComparison.OrdinalIgnoreCase))
                             {
-                                var metricClient = new MetricsQueryClient(new DefaultAzureCredential());
                                 // get metric records
                                 var metricRecords = new MetricsQueryOptions()
                                 {
@@ -226,7 +221,7 @@ namespace GettingSqlServerMetrics
                                     },
                                     Filter = $"ElasticPoolResourceId eq '{elasticPool.Id}'"
                                 };
-                                MetricsQueryResult metricCollection = (await metricClient.QueryResourceAsync(sqlServer.Data.Id, new[] { metricDefinition.Name.ToString() }, metricRecords)).Value;
+                                MetricsQueryResult metricCollection = (await metricClient.QueryResourceAsync(elasticPool.Data.Id, new[] { metricDefinition.Name.ToString() }, metricRecords)).Value;//Failed to find metric configuration for provider: Microsoft.Sql, resource Type: servers, metric: Azure.ResourceManager.Sql.Models.SqlMetricName, Valid metrics: dtu_consumption_percent,storage_used,dtu_used
 
                                 Utilities.Log($"SQL server \"{sqlServer.Data.Name}\" {metricDefinition.Name.LocalizedValue} metrics\n");
                                 Utilities.Log("\tNamespacse: " + metricCollection.Namespace);
@@ -265,24 +260,23 @@ namespace GettingSqlServerMetrics
                         // ============================================================
                         // Use Monitor Service to list the SQL Database metrics.
                         Utilities.Log("Using Monitor Service to list the SQL Database metrics");
-                        var dataBasemetricDefinitions = await sqlDB.GetMetricDefinitionsAsync().ToEnumerableAsync();
+                        var dbMetricClient = new MetricsQueryClient(new DefaultAzureCredential());
+                        var dataBasemetricDefinitions =  await client.GetMonitorMetricDefinitionsAsync(sqlDB.Id).ToEnumerableAsync();
 
                         foreach (var metricDefinition in dataBasemetricDefinitions)
                         {
                             // find metric definition for "dtu used", "cpu used" and "storage"
                             if (metricDefinition.Name.LocalizedValue.Equals("dtu used", StringComparison.OrdinalIgnoreCase)
                                 || metricDefinition.Name.LocalizedValue.Equals("cpu used", StringComparison.OrdinalIgnoreCase)
-                                || metricDefinition.Name.LocalizedValue.Equals("storage used", StringComparison.OrdinalIgnoreCase))
+                                || metricDefinition.Name.LocalizedValue.Equals("storageused", StringComparison.OrdinalIgnoreCase))
                             {
-                                // get metric records
-                                var dbMetricClient = new MetricsQueryClient(new DefaultAzureCredential());
+                                
                                 // get metric records
                                 var metricRecords = new MetricsQueryOptions()
                                 {
                                     TimeRange = new QueryTimeRange(startTime, endTime),
                                 };
-                                MetricsQueryResult metricCollection = (await dbMetricClient.QueryResourceAsync(sqlDB.Data.Id, new[] { metricDefinition.Name.ToString() }, metricRecords)).Value;
-
+                                MetricsQueryResult metricCollection = (await dbMetricClient.QueryResourceAsync(metricDefinition.Id, new[] { metricDefinition.Name.ToString() }, metricRecords)).Value;
                                 Utilities.Log("Metrics for '" + sqlDB.Id + "':");
                                 Utilities.Log("\tNamespacse: " + metricCollection.Namespace);
                                 Utilities.Log("\tQuery time: " + metricCollection.TimeSpan);
