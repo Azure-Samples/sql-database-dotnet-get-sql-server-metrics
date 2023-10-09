@@ -206,10 +206,9 @@ namespace GettingSqlServerMetrics
                         foreach (var metricDefinition in metricDefinitions)
                         {
                             // find metric definition for "DTU used" and "Storage used"
-                            if (metricDefinition.Name.LocalizedValue.Equals("dtu_used", StringComparison.OrdinalIgnoreCase)
-                                || metricDefinition.Name.LocalizedValue.Equals("storage_used", StringComparison.OrdinalIgnoreCase))
+                            if (metricDefinition.Name.LocalizedValue.Equals("dtu used", StringComparison.OrdinalIgnoreCase)
+                                || metricDefinition.Name.LocalizedValue.Equals("storage used", StringComparison.OrdinalIgnoreCase))
                             {
-                                string id = metricDefinition.Id;
                                 // get metric records
                                 var metricRecords = new MetricsQueryOptions()
                                 {
@@ -221,7 +220,7 @@ namespace GettingSqlServerMetrics
                                     },
                                     Filter = $"ElasticPoolResourceId eq '{elasticPool.Id}'"
                                 };
-                                MetricsQueryResult metricCollection = (await metricClient.QueryResourceAsync(sqlServer.Data.Id, new[] { metricDefinition.Namespace }, metricRecords)).Value;//Failed to find metric configuration for provider: Microsoft.Sql, resource Type: servers, metric: Azure.ResourceManager.Sql.Models.SqlMetricName, Valid metrics: dtu_consumption_percent,storage_used,dtu_used
+                                MetricsQueryResult metricCollection = (await metricClient.QueryResourceAsync(sqlServer.Data.Id, new[] { metricDefinition.Name.Value }, metricRecords)).Value;
 
                                 Utilities.Log($"SQL server \"{sqlServer.Data.Name}\" {metricDefinition.Name.LocalizedValue} metrics\n");
                                 Utilities.Log("\tNamespacse: " + metricCollection.Namespace);
@@ -276,7 +275,7 @@ namespace GettingSqlServerMetrics
                                 {
                                     TimeRange = new QueryTimeRange(startTime, endTime),
                                 };
-                                MetricsQueryResult metricCollection = (await dbMetricClient.QueryResourceAsync(sqlDB.Data.Id, new[] { metricDefinition.Namespace }, metricRecords)).Value;
+                                MetricsQueryResult metricCollection = (await dbMetricClient.QueryResourceAsync(sqlDB.Data.Id, new[] { metricDefinition.Name.Value }, metricRecords)).Value;
                                 Utilities.Log("Metrics for '" + sqlDB.Id + "':");
                                 Utilities.Log("\tNamespacse: " + metricCollection.Namespace);
                                 Utilities.Log("\tQuery time: " + metricCollection.TimeSpan);
